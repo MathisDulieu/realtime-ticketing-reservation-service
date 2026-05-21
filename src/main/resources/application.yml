@@ -1,0 +1,33 @@
+# Build info
+java:
+  build:
+    version: '@maven.compiler.release@'
+
+# Management
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,liveness,prometheus"
+      base-path: /monitor
+    endpoint:
+      health:
+        show-details: always
+      metrics:
+        enabled: true
+
+# Fail fast on encoding
+spring:
+  mandatory-file-encoding: UTF-8
+  main.banner-mode: 'off'
+  threads:
+    virtual:
+      enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+server:
+  shutdown: graceful

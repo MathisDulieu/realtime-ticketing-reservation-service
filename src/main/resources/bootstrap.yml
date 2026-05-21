@@ -1,0 +1,3 @@
+spring:
+  application:
+    name: realtime-ticketing-reservation-service
