@@ -1,11 +1,11 @@
 package com.mathisdulieu.ticketing.reservation;
 
 import com.mathisdulieu.ticketing.reservation.config.CorsProperties;
-import com.mathisdulieu.ticketing.reservation.config.MongoProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +17,9 @@ import java.util.TimeZone;
 @Slf4j
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.mathisdulieu.ticketing.reservation"})
+@ConfigurationPropertiesScan
 @EnableConfigurationProperties({
-    CorsProperties.class,
-    MongoProperties.class
+    CorsProperties.class
 })
 public class RealtimeTicketingReservationServiceApplication {
 

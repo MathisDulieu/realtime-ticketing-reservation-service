@@ -21,8 +21,3 @@ logging:
 cors:
   allowed-origins:
     - "http://localhost:3000"
-
-reservation:
-  mongodb:
-    uri: mongodb://localhost:27017
-    database-name: reservation-service-test
