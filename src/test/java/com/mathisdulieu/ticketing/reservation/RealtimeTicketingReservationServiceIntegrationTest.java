@@ -40,7 +40,7 @@ public class RealtimeTicketingReservationServiceIntegrationTest {
 
     @BeforeEach
     void setup() {
-        mongoTemplate.getDb().getCollection("reservations").drop();
+        mongoTemplate.dropCollection("reservations");
         testKafkaConsumer.createdRecords.clear();
         testKafkaConsumer.cancelledRecords.clear();
     }
