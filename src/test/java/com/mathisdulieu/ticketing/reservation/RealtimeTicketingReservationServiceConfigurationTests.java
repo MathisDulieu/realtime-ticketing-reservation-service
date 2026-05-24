@@ -1,24 +1,17 @@
 package com.mathisdulieu.ticketing.reservation;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import de.bwaldvogel.mongo.MongoServer;
-import de.bwaldvogel.mongo.backend.memory.MemoryBackend;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
+import com.mathisdulieu.ticketing.library.core.utils.UuidService;
+import com.mathisdulieu.ticketing.library.test.kafka.config.KafkaConsumerTestConfig;
+import com.mathisdulieu.ticketing.library.test.kafka.config.KafkaProducerTestConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.jmx.export.MBeanExporter;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
-import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-import org.springframework.kafka.support.serializer.JsonDeserializer;
-
-import java.util.Map;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import static org.mockito.Mockito.mock;
 
@@ -30,46 +23,22 @@ public class RealtimeTicketingReservationServiceConfigurationTests {
         return mock(MBeanExporter.class);
     }
 
-    @Bean(destroyMethod = "shutdown")
-    public MongoServer mongoServer() {
-        MongoServer mongoServer = new MongoServer(new MemoryBackend());
-        mongoServer.bind();
-        return mongoServer;
-    }
-
-    @Primary
-    @Bean(destroyMethod = "close")
-    public MongoClient mongoClient(MongoServer mongoServer) {
-        return MongoClients.create("mongodb://" + mongoServer.getLocalAddress().getHostName() + ":" + mongoServer.getLocalAddress().getPort());
-    }
-
-    @Primary
     @Bean
-    public MongoTemplate mongoTemplate(MongoClient mongoClient) {
-        return new MongoTemplate(mongoClient, "reservation-service-test");
+    public UuidService uuidService() {
+        return new UuidService();
     }
 
     @Bean
     @ConditionalOnProperty("spring.embedded.kafka.brokers")
-    public ConsumerFactory<String, ReservationEvent> testConsumerFactory(Environment environment) {
-        JsonDeserializer<ReservationEvent> deserializer = new JsonDeserializer<>(ReservationEvent.class);
-        deserializer.addTrustedPackages("*");
-
-        return new DefaultKafkaConsumerFactory<>(Map.of(
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, environment.getProperty("spring.kafka.bootstrap-servers"),
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest"
-        ), new StringDeserializer(), deserializer);
+    public KafkaTemplate<String, ReservationEvent> reservationCreatedEventKafkaTemplate(Environment environment) {
+        return KafkaProducerTestConfig.kafkaTemplate(environment.getProperty("spring.kafka.bootstrap-servers"));
     }
 
     @Bean
     @ConditionalOnProperty("spring.embedded.kafka.brokers")
-    public ConcurrentKafkaListenerContainerFactory<String, ReservationEvent> kafkaListenerContainerFactory(
-        ConsumerFactory<String, ReservationEvent> testConsumerFactory) {
-        ConcurrentKafkaListenerContainerFactory<String, ReservationEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(testConsumerFactory);
-        return factory;
+    public ConcurrentKafkaListenerContainerFactory<String, ReservationEvent> reservationEventKafkaListenerContainerFactory(Environment environment) {
+        ConsumerFactory<String, ReservationEvent> consumerFactory = KafkaConsumerTestConfig.consumerFactory(environment.getProperty("spring.embedded.kafka.brokers"), ReservationEvent.class);
+        return KafkaConsumerTestConfig.listenerContainerFactory(consumerFactory);
     }
 
 }
