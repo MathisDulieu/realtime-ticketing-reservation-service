@@ -19,5 +19,9 @@ logging:
 
 # CORS
 cors:
-  allowed-origins:
-    - "http://localhost:3000"
+  allowed-origin: http://localhost:3000
+
+library:
+  test:
+    mongo:
+      database-name: reservation-service-test

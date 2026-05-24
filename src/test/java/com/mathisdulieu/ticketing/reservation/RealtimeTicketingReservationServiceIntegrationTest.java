@@ -1,10 +1,14 @@
 package com.mathisdulieu.ticketing.reservation;
 
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
+import com.mathisdulieu.ticketing.library.test.kafka.consumer.GenericTestKafkaConsumer;
+import com.mathisdulieu.ticketing.library.test.mongo.config.MongoTestConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestComponent;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -12,21 +16,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.stereotype.Component;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@EmbeddedKafka(partitions = 1, topics = {"json_reservation_created", "json_reservation_cancelled"})
+@EmbeddedKafka(partitions = 1, topics = {"json_realtime_reservation_created", "json_realtime_reservation_cancelled"})
 @ActiveProfiles("test")
-@Import(RealtimeTicketingReservationServiceConfigurationTests.class)
+@Import({
+    RealtimeTicketingReservationServiceConfigurationTests.class,
+    RealtimeTicketingReservationServiceIntegrationTest.TestKafkaConsumer.class,
+    MongoTestConfig.class
+})
 public class RealtimeTicketingReservationServiceIntegrationTest {
 
     @Autowired
@@ -41,8 +45,8 @@ public class RealtimeTicketingReservationServiceIntegrationTest {
     @BeforeEach
     void setup() {
         mongoTemplate.dropCollection("reservations");
-        testKafkaConsumer.createdRecords.clear();
-        testKafkaConsumer.cancelledRecords.clear();
+        testKafkaConsumer.consumer.clearRecordsFromTopic("json_realtime_reservation_created");
+        testKafkaConsumer.consumer.clearRecordsFromTopic("json_realtime_reservation_cancelled");
     }
 
     @Test
@@ -60,8 +64,7 @@ public class RealtimeTicketingReservationServiceIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo("Reservation created");
 
-        ConsumerRecord<String, ReservationEvent> record = testKafkaConsumer.createdRecords.poll(5, TimeUnit.SECONDS);
-        assertThat(record).isNotNull();
+        ConsumerRecord<String, ReservationEvent> record = testKafkaConsumer.consumer.pollRecord("json_realtime_reservation_created", 5);
         assertThat(record.value().eventId()).isNotBlank();
 
         List<Reservation> savedReservations = mongoTemplate.findAll(Reservation.class);
@@ -87,26 +90,26 @@ public class RealtimeTicketingReservationServiceIntegrationTest {
         restTemplate.delete("/api/v1/reservations/{id}", "reservation-id");
 
         // Assert
-        ConsumerRecord<String, ReservationEvent> record = testKafkaConsumer.cancelledRecords.poll(5, TimeUnit.SECONDS);
-        assertThat(record).isNotNull();
+        ConsumerRecord<String, ReservationEvent> record = testKafkaConsumer.consumer.pollRecord("json_realtime_reservation_cancelled", 5);
         assertThat(record.value().eventId()).isEqualTo("reservation-id");
 
         assertThat(mongoTemplate.findAll(Reservation.class)).isEmpty();
     }
 
-    @Component
+    @TestComponent
     static class TestKafkaConsumer {
-        final BlockingQueue<ConsumerRecord<String, ReservationEvent>> createdRecords = new LinkedBlockingQueue<>();
-        final BlockingQueue<ConsumerRecord<String, ReservationEvent>> cancelledRecords = new LinkedBlockingQueue<>();
+        final GenericTestKafkaConsumer<ReservationEvent> consumer = new GenericTestKafkaConsumer<>();
 
-        @KafkaListener(topics = "json_reservation_created", groupId = "test-group-created")
-        public void consumeCreated(ConsumerRecord<String, ReservationEvent> record) {
-            createdRecords.add(record);
-        }
-
-        @KafkaListener(topics = "json_reservation_cancelled", groupId = "test-group-cancelled")
-        public void consumeCancelled(ConsumerRecord<String, ReservationEvent> record) {
-            cancelledRecords.add(record);
+        @KafkaListener(
+            topics = {
+                "json_realtime_reservation_created",
+                "json_realtime_reservation_cancelled"
+            },
+            groupId = "test-group",
+            containerFactory = "reservationEventKafkaListenerContainerFactory"
+        )
+        public void consume(ConsumerRecord<String, ReservationEvent> record) {
+            consumer.records.add(record);
         }
     }
 

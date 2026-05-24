@@ -1,6 +1,6 @@
 package com.mathisdulieu.ticketing.reservation.config;
 
-import com.mathisdulieu.ticketing.reservation.ReservationEvent;
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;

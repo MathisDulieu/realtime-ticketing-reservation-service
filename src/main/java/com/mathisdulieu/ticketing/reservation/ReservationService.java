@@ -1,6 +1,7 @@
 package com.mathisdulieu.ticketing.reservation;
 
-import com.mathisdulieu.ticketing.reservation.utils.UuidService;
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
+import com.mathisdulieu.ticketing.library.core.utils.UuidService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

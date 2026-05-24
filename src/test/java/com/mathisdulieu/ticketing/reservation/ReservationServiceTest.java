@@ -1,6 +1,7 @@
 package com.mathisdulieu.ticketing.reservation;
 
-import com.mathisdulieu.ticketing.reservation.utils.UuidService;
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
+import com.mathisdulieu.ticketing.library.core.utils.UuidService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

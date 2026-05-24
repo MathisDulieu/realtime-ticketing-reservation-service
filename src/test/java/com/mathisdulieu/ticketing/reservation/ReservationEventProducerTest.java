@@ -1,5 +1,6 @@
 package com.mathisdulieu.ticketing.reservation;
 
+import com.mathisdulieu.ticketing.library.core.dto.ReservationEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,7 +30,7 @@ class ReservationEventProducerTest {
         reservationEventProducer.sendReservationCreatedEvent(reservationEvent);
 
         // Assert
-        verify(kafkaTemplate).send("json_reservation_created", reservationEvent);
+        verify(kafkaTemplate).send("json_realtime_reservation_created", reservationEvent);
     }
 
     @Test
@@ -43,7 +44,7 @@ class ReservationEventProducerTest {
         reservationEventProducer.sendReservationCancelledEvent(reservationEvent);
 
         // Assert
-        verify(kafkaTemplate).send("json_reservation_cancelled", reservationEvent);
+        verify(kafkaTemplate).send("json_realtime_reservation_cancelled", reservationEvent);
     }
 
 }
